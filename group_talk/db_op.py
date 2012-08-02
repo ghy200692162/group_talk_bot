@@ -26,6 +26,10 @@ class DB_oper():
         self.do_unsubscribe(user['jid'])
         self.do_unsubscribe(user['jid'],'unsubscribed')
 
+    def find_user_flag(self,jid):
+        u =  structure.connection.User.find_one({'jid':jid})
+        return u['flag']
+
     def find_user_by_jid(self,jid):
         return structure.connection.User.find_one({'jid':jid})
     
@@ -35,6 +39,18 @@ class DB_oper():
     def set_nickname(self,jid,nickname):
         structure.connection.User.collection.update({'jid':jid},{'$set':{'nickname':nickname}})
 
+    def check_user_exist(self,jid):
+        u = self.find_user_by_jid(jid)
+        if u :
+            return True
+        else:
+            return False
+    def check_nick_exist(self,nickname):
+        u = self.find_user_by_nick(nickname)
+        if u :
+            return True
+        else:
+            return False
     @staticmethod
     def db_init():   
         structure.init()
@@ -46,4 +62,4 @@ if __name__=='__main__':
     #test.delete_user(user)
     #test.set_nick_name(r'hghgh@abc','hello')
     for u in structure.connection.User.find():
-        print u['jid'],u['nickname']
+        print u['jid'],u['nickname'],u['flag']

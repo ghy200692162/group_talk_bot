@@ -15,6 +15,9 @@ from pyxmpp2.streamevents import AuthorizedEvent, DisconnectedEvent
 from message import *
 from db_op import *
 from command import *
+from misc import *
+
+logger = logging.getLogger(__name__)
 
 class Talkbot(DB_oper,EventHandler,XMPPFeatureHandler,Messages,Command):
 
@@ -34,7 +37,7 @@ class Talkbot(DB_oper,EventHandler,XMPPFeatureHandler,Messages,Command):
 
     @event_handler()
     def handle_all(self,event):
-        logging.info(u"--{0}".format(event))
+        logger.info(u"--{0}".format(event))
 
     @message_stanza_handler()
     def handle_message(self,stanza):
@@ -43,31 +46,33 @@ class Talkbot(DB_oper,EventHandler,XMPPFeatureHandler,Messages,Command):
         current_jid = stanza.from_jid
         body = stanza.body
         if body[0]=='-':
-            logging.info(u"handle command which is {0}".format(body))
+            logger.info(u"handle command which is {0}".format(body))
             command = body.split(' ')[0]
             print 'in main command is %s' % (command)
             self.dispatch_command(command,stanza)
-            logging.info(u"handle command which is {0} done".format(body))
+            logger.info(u"handle command which is {0} done".format(body))
         else:
-            logging.info(u"handle common message which is {0}".format(body))
-            self.dispatch_message(stanza.body,current_jid.bare())
-            logging.info(u"handle common message whcih is {0} done".format(body))
+            logger.info(u"handle common message which is {0}".format(body))
+            self.push_message(stanza.body,current_jid.bare())
+            logger.info(u"handle common message whcih is {0} done".format(body))
         return True
 
     @presence_stanza_handler("subscribe")
     def handle_subscribe(self,stanza):
-        logging.info(u"{0} request presence subscripiton ".format(stanza.from_jid))
-        
-        sender = stanza.from_jid
-        bare_jid = sender.bare().as_string()
-        self.add_user(bare_jid)
+        logger.info(u"{0} request presence subscripiton ".format(stanza.from_jid))
+
+        if self.check_user_exist(stanza.from_jid.bare().as_string()):
+            self.send_message(stanza.from_jid,statements.get('USER_EXIST'))
+        else:
+            sender = stanza.from_jid
+            bare_jid = sender.bare().as_string()
+            self.add_user(bare_jid)
 
         presence = Presence(to_jid=stanza.from_jid.bare(),stanza_type="subscribe")
         return [stanza.make_accept_response(),presence]
 
     def get_online_users(self):
         users = [x.jid for x in self.client.roster if x.subscription=='both']
-        print self.client.roster
         return users
 
     def send_message(self,receiver,msg):
@@ -92,7 +97,6 @@ class Talkbot(DB_oper,EventHandler,XMPPFeatureHandler,Messages,Command):
         self.client.roster.delItem(jid)
 
 your_jid = r'ghy@iceout.info'
-logging.basicConfig(level=logging.INFO)
 
 settings = XMPPSettings({
                             "software_name": "Talkbot",

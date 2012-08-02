@@ -1,10 +1,18 @@
 from mongokit import Document,Connection
+from mongokit.schema_document import ValidationError
 import datetime
 import logging
 
 import config
+from misc import *
+
 logger = logging.getLogger(__name__)
 global connection
+def validate_jid(jid):
+    if not re_jid.match(jid):
+        raise ValidationError(_('wrong jid format: %s') %jid)
+    return True
+
 class User(Document):
     __collection__ = config.connection_prefix+'User'
     __database__ = config.database
@@ -17,9 +25,12 @@ class User(Document):
         'flag':int
         }
     required_fields = ['jid']
+    validators = {
+            'jid':validate_jid,
+            }
     default_values = {
                 'join_time':datetime.datetime.utcnow(),
-                'flag':1,
+                'flag':GT_USER,
             }
 
 def init():
